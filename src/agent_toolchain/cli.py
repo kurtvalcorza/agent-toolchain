@@ -112,33 +112,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "apply":
         plan = _make_plan(args)
         adapter = get_adapter(args.target, args.target_root)
-        state = apply_plan(
+        installed_state = apply_plan(
             plan,
             source_root=args.source_root,
             state_path=adapter.install_state_path(),
         )
-        print(f"installed {len(state.files)} managed file(s)")
+        print(f"installed {len(installed_state.files)} managed file(s)")
         return 0
 
-    state = load_state(Path(args.state))
-    if state is None:
+    current_state = load_state(Path(args.state))
+    if current_state is None:
         raise SystemExit(f"install state not found: {args.state}")
 
     if args.command == "status":
-        print(f"target: {state.target}")
-        print(f"profile: {state.profile or '(none)'}")
-        print(f"modules: {', '.join(state.modules) or '(none)'}")
-        print(f"managed files: {len(state.files)}")
+        print(f"target: {current_state.target}")
+        print(f"profile: {current_state.profile or '(none)'}")
+        print(f"modules: {', '.join(current_state.modules) or '(none)'}")
+        print(f"managed files: {len(current_state.files)}")
         return 0
 
     if args.command == "doctor":
-        findings = inspect_state(state)
+        findings = inspect_state(current_state)
         for finding in findings:
             print(f"{finding.status.upper():8} {finding.path}")
         return 1 if any(item.status != "clean" for item in findings) else 0
 
     if args.command == "uninstall":
-        preserved = uninstall_managed(state)
+        preserved = uninstall_managed(current_state)
         if preserved:
             for path in preserved:
                 print(f"PRESERVE {path}")
