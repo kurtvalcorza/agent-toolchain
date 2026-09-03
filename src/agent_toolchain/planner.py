@@ -32,12 +32,15 @@ def build_plan(
             source = _safe_source(root, declared_path)
             if not source.exists():
                 raise PlanningError(f"declared path does not exist: {declared_path}")
+            if source.is_symlink():
+                raise PlanningError(f"declared path is a symlink: {declared_path}")
             files = (
                 [source]
                 if source.is_file()
                 else sorted(path for path in source.rglob("*") if path.is_file())
             )
             for file_path in files:
+                _assert_safe_source_file(root, file_path)
                 relative = file_path.relative_to(root).as_posix()
                 destination = adapter.destination_for(relative)
                 destination_text = str(destination)
@@ -80,3 +83,12 @@ def _safe_source(root: Path, declared_path: str) -> Path:
     except ValueError as exc:
         raise PlanningError(f"declared path escapes source root: {declared_path}") from exc
     return candidate
+
+
+def _assert_safe_source_file(root: Path, path: Path) -> None:
+    if path.is_symlink():
+        raise PlanningError(f"refusing to follow source symlink: {path}")
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError as exc:
+        raise PlanningError(f"source file escapes staging root: {path}") from exc
