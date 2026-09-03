@@ -9,7 +9,7 @@ from agent_toolchain.adapters.codex import CodexAdapter
 from agent_toolchain.apply import ApplyError, apply_plan
 from agent_toolchain.doctor import inspect_state
 from agent_toolchain.manifests import load_catalog
-from agent_toolchain.planner import build_plan
+from agent_toolchain.planner import PlanningError, build_plan
 from agent_toolchain.resolver import ResolutionError, resolve
 from agent_toolchain.state import load_state
 from agent_toolchain.uninstall import uninstall_managed
@@ -165,3 +165,18 @@ def test_apply_refuses_to_orphan_previously_managed_files(tmp_path: Path) -> Non
     base_plan = build_plan(catalog, base_only, source_root=staging, adapter=adapter)
     with pytest.raises(ApplyError, match="orphan previously managed"):
         apply_plan(base_plan, source_root=staging, state_path=adapter.install_state_path())
+
+
+def test_executable_module_requires_explicit_hook_consent(tmp_path: Path) -> None:
+    catalog = load_catalog(_catalog(tmp_path))
+    staging = _staging(tmp_path)
+    resolution = resolve(catalog, target="claude", include_components=("hooks",))
+    from agent_toolchain.adapters.claude import ClaudeAdapter
+
+    with pytest.raises(PlanningError, match="explicit hook consent"):
+        build_plan(
+            catalog,
+            resolution,
+            source_root=staging,
+            adapter=ClaudeAdapter(tmp_path / "claude"),
+        )

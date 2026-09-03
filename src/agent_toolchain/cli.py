@@ -27,6 +27,9 @@ def _parser() -> argparse.ArgumentParser:
     apply = sub.add_parser("apply", help="apply a previously resolvable installation safely")
     _install_arguments(apply)
 
+    status = sub.add_parser("status", help="summarize managed installation state")
+    status.add_argument("--state", required=True)
+
     doctor = sub.add_parser("doctor", help="inspect managed files for drift")
     doctor.add_argument("--state", required=True)
 
@@ -120,6 +123,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     state = load_state(Path(args.state))
     if state is None:
         raise SystemExit(f"install state not found: {args.state}")
+
+    if args.command == "status":
+        print(f"target: {state.target}")
+        print(f"profile: {state.profile or '(none)'}")
+        print(f"modules: {', '.join(state.modules) or '(none)'}")
+        print(f"managed files: {len(state.files)}")
+        return 0
 
     if args.command == "doctor":
         findings = inspect_state(state)

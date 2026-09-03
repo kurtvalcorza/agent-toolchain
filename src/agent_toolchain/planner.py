@@ -26,8 +26,9 @@ def build_plan(
     for module_id in resolution.modules:
         module = catalog.modules[module_id]
         if module.executable and not hooks_enabled:
-            warnings.append(f"skipped executable module {module_id}: hooks are not enabled")
-            continue
+            raise PlanningError(
+                f"executable module {module_id} requires explicit hook consent"
+            )
         for declared_path in module.paths:
             source = _safe_source(root, declared_path)
             if not source.exists():

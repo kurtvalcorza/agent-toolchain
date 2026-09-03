@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
+from pathlib import Path, PurePath
 
 
 class HarnessAdapter(ABC):
@@ -17,7 +17,7 @@ class HarnessAdapter(ABC):
     def install_state_path(self) -> Path:
         return self.root / ".agent-toolchain" / "install-state.json"
 
-    def _under_root(self, relative: Path) -> Path:
+    def _under_root(self, relative: PurePath) -> Path:
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError(f"unsafe adapter-relative path: {relative}")
         return self.root / relative
