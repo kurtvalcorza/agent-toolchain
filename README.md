@@ -2,81 +2,73 @@
 
 Host-neutral distribution and integration tooling for portable AI-agent capabilities.
 
-`agent-toolchain` installs, configures, validates, and maintains agent capabilities across AI coding harnesses without moving domain or runtime semantics into the installer.
+`agent-toolchain` is the distribution and harness-adaptation plane for independently usable agent capabilities. Component repositories remain authoritative for behavior; this project owns packaging, target adaptation, installation planning, managed state, and integrity checks.
 
-> Capabilities own behavior. The toolchain owns distribution, harness adaptation, managed installation state, and drift detection.
+## v0.1 scope
 
-## Scope
+The initial core provides:
 
-The toolchain is intended to compose independently usable projects such as:
-
-- `agent-relay` — multi-agent roles, handoffs, review, verification, and convergence;
-- `agent-router` — provider/model/executor routing;
-- `agent-control` — lifecycle, policy, budgets, authorization, recovery, and audit;
-- `agentic-vault` — durable human/agent knowledge and governance;
-- `agentic-research` — literature and systematic-review capabilities;
-- `agentic-analytics` — analytical execution, provenance, artifacts, and validation.
-
-Every component must remain independently usable without `agent-toolchain`.
+- versioned module, component, and profile manifests;
+- dependency and target-compatibility resolution;
+- Codex and Claude harness adapters;
+- deterministic copy-file planning from a canonical staging tree;
+- explicit consent for executable/hook modules;
+- transactional apply with full preflight validation and rollback on commit failure;
+- source and destination path/symlink safety checks at apply time;
+- canonical absolute managed paths in SHA-256 install state;
+- refusal to overwrite unmanaged paths, locally drifted files, or unsafe filesystem objects;
+- refusal to silently orphan previously managed files;
+- drift inspection with conservative handling of symlinks and non-regular files;
+- conservative uninstall that preserves modified, symlinked, or otherwise unsafe managed paths;
+- `plan`, `apply`, `status`, `doctor`, and `uninstall` CLI primitives;
+- Python 3.12/3.13 CI with Ruff, Mypy, and Pytest.
 
 ## Architectural boundary
 
+The toolchain deliberately does **not** own component semantics. A component such as `agent-relay` or `agentic-research` remains independently usable and authoritative for its own routing, methodology, prompts, skills, and behavior.
+
+The following capabilities are deferred until the core contract has been exercised against real sibling repositories:
+
+- remote source acquisition and repository/version pinning;
+- component self-description;
+- automatic skill discovery;
+- JSON/TOML merge operations for MCP or harness settings;
+- repair planning;
+- lifecycle-hook normalization;
+- static harness security auditing;
+- UI/control-pane surfaces.
+
+## Canonical staging tree
+
+Adapters currently understand a deliberately small canonical namespace:
+
 ```text
-canonical component metadata
-          |
-          v
-profile -> component -> module dependency resolution
-          |
-          v
-harness adapter
-          |
-          v
-immutable install plan
-          |
-          v
-safe apply -> content-hashed managed state
-          |
-          +-> doctor / repair / uninstall
+skills/
+commands/
+agents/   # Claude
+rules/    # Claude
+hooks/    # Claude, explicit consent required when executable
 ```
 
-The initial implementation deliberately does **not** provide:
+Codex maps canonical `commands/` content into its `prompts/` namespace. Claude preserves the canonical command namespace.
 
-- an agent loop or planner;
-- model routing;
-- domain execution;
-- shared conversational memory;
-- autonomous self-modification;
-- a new policy engine;
-- host-specific domain logic.
+Planning never fetches source content. The caller supplies an explicit local staging root; acquisition and provenance are a separate trust boundary.
 
-## Design principles
+## Managed-state invariants
 
-1. **Plan before mutation.** Resolution and planning are deterministic and inspectable before anything is written.
-2. **Capabilities remain authoritative for their own semantics.** Harness adapters translate packaging, not behavior.
-3. **Managed files have explicit ownership.** Installed content is content-hashed so drift can be detected without overwriting local edits.
-4. **Executable automation requires explicit consent.** Installing skills/configuration must not silently enable hooks.
-5. **Target-specific concerns live at the edge.** Canonical component metadata must not depend on Claude Code, Codex, or another harness.
-6. **Deterministic facts precede model judgment.** Installation, compatibility, state, and integrity findings are runtime facts.
-7. **No mandatory parent dependency.** Components work without the toolchain.
+`apply` resolves all managed destinations to canonical absolute paths, preflights the full operation set before the first target-file mutation, revalidates sources and destinations immediately before each commit, writes through same-directory temporary files, and rolls back committed files if a later operation fails.
 
-## Initial milestone
+A destination is only considered managed after its absolute path, module owner, and SHA-256 digest have been committed to install state. Updates refuse to overwrite unmanaged content or locally drifted managed files.
 
-The first stable slice targets **Codex** and **Claude Code** and implements:
+`doctor` and `uninstall` fail closed when managed paths are relative, escape the recorded target root, traverse symlinked parents, are themselves symlinks, or become non-regular filesystem objects. Uninstall deletes only regular, unmodified managed files.
 
-- versioned manifests;
-- profile/component/module resolution;
-- target compatibility checks;
-- deterministic install-plan generation;
-- Codex and Claude harness adapters;
-- safe managed application;
-- SHA-256 install state;
-- `status`, `doctor`, and `uninstall` primitives;
-- external integration fixtures for `agent-relay` and `agentic-research`.
+## Development
 
-## Status
+```bash
+python -m pip install -e '.[dev]'
+ruff check .
+mypy src
+pytest
+```
 
-Initial implementation in progress.
-
-## License
-
-MIT.
+CI runs the quality suite on Python 3.12 and 3.13.
