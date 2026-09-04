@@ -71,4 +71,4 @@ mypy src
 pytest
 ```
 
-CI runs the quality suite on Python 3.12 and 3.13.
+CI runs the quality suite on Python 3.12 and 3.13. The hardened v0.1 branch includes 15 regression tests covering ordinary lifecycle behavior and adversarial filesystem cases.
