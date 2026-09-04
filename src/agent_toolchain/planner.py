@@ -35,11 +35,7 @@ def build_plan(
                 raise PlanningError(f"declared path does not exist: {declared_path}")
             if source.is_symlink():
                 raise PlanningError(f"declared path is a symlink: {declared_path}")
-            files = (
-                [source]
-                if source.is_file()
-                else sorted(path for path in source.rglob("*") if path.is_file())
-            )
+            files = [source] if source.is_file() else _collect_regular_files(source)
             for file_path in files:
                 _assert_safe_source_file(root, file_path)
                 relative = file_path.relative_to(root).as_posix()
@@ -72,6 +68,28 @@ def build_plan(
         skipped_modules=resolution.skipped_modules,
         warnings=tuple(warnings),
     )
+
+
+def _collect_regular_files(directory: Path) -> list[Path]:
+    """Enumerate a directory tree without ever traversing symlink entries."""
+
+    try:
+        children = sorted(directory.iterdir(), key=lambda path: path.name)
+    except OSError as exc:
+        raise PlanningError(f"cannot enumerate source directory {directory}: {exc}") from exc
+
+    files: list[Path] = []
+    for child in children:
+        if child.is_symlink():
+            raise PlanningError(f"refusing to traverse source symlink: {child}")
+        if child.is_dir():
+            files.extend(_collect_regular_files(child))
+            continue
+        if child.is_file():
+            files.append(child)
+            continue
+        raise PlanningError(f"source path is not a regular file or directory: {child}")
+    return files
 
 
 def _safe_source(root: Path, declared_path: str) -> Path:
