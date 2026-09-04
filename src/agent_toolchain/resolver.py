@@ -29,6 +29,10 @@ def resolve(
             raise ResolutionError(f"unknown component: {component_id}")
 
     excluded = set(exclude_modules)
+    unknown_exclusions = excluded - catalog.modules.keys()
+    if unknown_exclusions:
+        raise ResolutionError(f"unknown excluded modules: {sorted(unknown_exclusions)}")
+
     selected: list[str] = []
     skipped: list[str] = []
     visiting: set[str] = set()
