@@ -6,6 +6,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from ._paths import has_symlink_component
 from .models import InstallPlan, InstallState, ManagedFile, Operation
 from .state import STATE_SCHEMA_VERSION, load_state, sha256_file, write_state
 
@@ -255,17 +256,10 @@ def _assert_safe_destination(root: Path, destination: Path) -> None:
 
 
 def _assert_no_symlink_components(root: Path, directory: Path) -> None:
-    try:
-        relative = directory.relative_to(root)
-    except ValueError as exc:
-        raise ApplyError(f"directory escapes target root: {directory}") from exc
-    current = root
-    if current.is_symlink():
-        raise ApplyError(f"target root is a symlink: {current}")
-    for part in relative.parts:
-        current = current / part
-        if current.is_symlink():
-            raise ApplyError(f"refusing to traverse symlink: {current}")
+    if has_symlink_component(root, directory):
+        raise ApplyError(
+            f"refusing target path whose root or parent chain traverses a symlink: {directory}"
+        )
 
 
 def _absolute(path: Path) -> Path:
