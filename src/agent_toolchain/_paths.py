@@ -26,17 +26,36 @@ def is_under_root(root: Path, path: Path) -> bool:
     return True
 
 
-def has_symlink_component(root: Path, directory: Path) -> bool:
-    """Return whether root/directory containment crosses a symlink component."""
+def _absolute_path_has_symlink(path: Path) -> bool:
+    """Return whether any existing component of an absolute path is a symlink."""
 
+    if not path.is_absolute():
+        return True
+    parts = path.parts
+    if not parts:
+        return False
+
+    current = Path(parts[0])
+    if current.is_symlink():
+        return True
+    for part in parts[1:]:
+        current = current / part
+        if current.is_symlink():
+            return True
+    return False
+
+
+def has_symlink_component(root: Path, directory: Path) -> bool:
+    """Return whether root/directory containment crosses any symlink component."""
+
+    if _absolute_path_has_symlink(root):
+        return True
     try:
         relative = directory.relative_to(root)
     except ValueError:
         return True
 
     current = root
-    if current.is_symlink():
-        return True
     for part in relative.parts:
         current = current / part
         if current.is_symlink():
