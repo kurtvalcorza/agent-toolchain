@@ -61,7 +61,8 @@ def _metadata(value: Any, state_path: Path) -> dict[str, str]:
         isinstance(key, str) and isinstance(item, str) for key, item in value.items()
     ):
         raise StateError(
-            f"invalid install state {state_path}: metadata must map strings to strings"
+            f"invalid install state {state_path}: "
+            "metadata must map strings to strings"
         )
     return dict(value)
 
