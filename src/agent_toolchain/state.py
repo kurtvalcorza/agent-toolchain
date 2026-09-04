@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -116,8 +117,6 @@ def write_state(path: str | Path, state: InstallState) -> None:
         )
         os.replace(temporary, state_path)
     except OSError as exc:
-        try:
+        with suppress(OSError):
             temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
         raise StateError(f"cannot write install state {state_path}: {exc}") from exc
