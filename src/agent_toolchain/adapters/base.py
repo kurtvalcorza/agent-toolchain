@@ -3,12 +3,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path, PurePath
 
+from .._paths import lexical_absolute
+
 
 class HarnessAdapter(ABC):
     target: str
 
     def __init__(self, root: str | Path) -> None:
-        self.root = Path(root).expanduser()
+        self.root = lexical_absolute(Path(root).expanduser())
 
     @abstractmethod
     def destination_for(self, source_relative_path: str) -> Path:
