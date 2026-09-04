@@ -12,9 +12,10 @@ The initial core provides:
 - dependency and target-compatibility resolution;
 - Codex and Claude harness adapters;
 - deterministic copy-file planning from a canonical staging tree;
+- explicit non-following source-tree traversal that refuses symlink entries;
 - explicit consent for executable/hook modules;
 - transactional apply with full preflight validation and rollback on commit failure;
-- source and destination path/symlink safety checks at apply time;
+- source and destination path/symlink safety checks at apply time, including target-root ancestry;
 - canonical absolute managed paths in SHA-256 install state;
 - refusal to overwrite unmanaged paths, locally drifted files, or unsafe filesystem objects;
 - refusal to silently orphan previously managed files;
@@ -52,11 +53,11 @@ hooks/    # Claude, explicit consent required when executable
 
 Codex maps canonical `commands/` content into its `prompts/` namespace. Claude preserves the canonical command namespace.
 
-Planning never fetches source content. The caller supplies an explicit local staging root; acquisition and provenance are a separate trust boundary.
+Planning never fetches source content. The caller supplies an explicit local staging root; acquisition and provenance are a separate trust boundary. Directory enumeration is explicitly non-following: encountering a symlink entry fails planning instead of relying on recursive-glob traversal behavior.
 
 ## Managed-state invariants
 
-`apply` resolves all managed destinations to canonical absolute paths, preflights the full operation set before the first target-file mutation, revalidates sources and destinations immediately before each commit, writes through same-directory temporary files, and rolls back committed files if a later operation fails.
+`apply` resolves all managed destinations to canonical absolute paths, preflights the full operation set before the first target-file mutation, revalidates sources and destinations immediately before each commit, writes through same-directory temporary files, and rolls back committed files if a later operation fails. The target root and every existing ancestor/component used to reach managed destinations must be free of symlink traversal.
 
 A destination is only considered managed after its absolute path, module owner, and SHA-256 digest have been committed to install state. Updates refuse to overwrite unmanaged content or locally drifted managed files.
 
@@ -71,4 +72,4 @@ mypy src
 pytest
 ```
 
-CI runs the quality suite on Python 3.12 and 3.13. The hardened v0.1 test suite contains 15 tests covering ordinary lifecycle behavior and adversarial filesystem cases.
+CI runs the quality suite on Python 3.12 and 3.13. The hardened v0.1 suite contains 20 test functions and 22 collected pytest cases, covering ordinary lifecycle behavior plus adversarial filesystem, state-integrity, and Copilot-review regressions.
