@@ -81,7 +81,11 @@ def apply_plan(
             temporary_paths.discard(temporary)
             written.append((destination, digest))
             managed.append(
-                ManagedFile(path=str(destination), sha256=digest, module_id=item.operation.module_id)
+                ManagedFile(
+                    path=str(destination),
+                    sha256=digest,
+                    module_id=item.operation.module_id,
+                )
             )
 
         state = InstallState(
@@ -198,7 +202,9 @@ def _revalidate_destination(item: _PreparedOperation) -> None:
 
 
 def _copy_source_to_temp(source: Path, directory: Path) -> tuple[Path, str]:
-    descriptor, raw_path = tempfile.mkstemp(prefix=".agent-toolchain-", suffix=".tmp", dir=directory)
+    descriptor, raw_path = tempfile.mkstemp(
+        prefix=".agent-toolchain-", suffix=".tmp", dir=directory
+    )
     temporary = Path(raw_path)
     try:
         with os.fdopen(descriptor, "wb") as output, source.open("rb") as input_file:
