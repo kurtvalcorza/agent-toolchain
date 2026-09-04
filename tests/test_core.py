@@ -202,7 +202,9 @@ def test_apply_preflights_all_destinations_before_writing(tmp_path: Path) -> Non
     assert unmanaged.read_text(encoding="utf-8") == "local\n"
 
 
-def test_apply_rolls_back_when_commit_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_apply_rolls_back_when_commit_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     catalog = load_catalog(_catalog(tmp_path))
     staging = _staging(tmp_path)
     target = tmp_path / "codex"
