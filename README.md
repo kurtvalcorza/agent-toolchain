@@ -72,4 +72,4 @@ mypy src
 pytest
 ```
 
-CI runs the quality suite on Python 3.12 and 3.13. The hardened v0.1 suite contains 23 test functions, which expand to 25 collected pytest cases because one malformed-state regression is parametrized over three inputs. The suite covers ordinary lifecycle behavior plus adversarial filesystem, state-integrity, and review-round regressions.
+CI runs the quality suite on Python 3.12 and 3.13. The hardened v0.1 suite contains 24 test functions, which expand to 26 collected pytest cases because one malformed-state regression is parametrized over three inputs. The suite covers ordinary lifecycle behavior plus adversarial filesystem, state-integrity, and review-round regressions.

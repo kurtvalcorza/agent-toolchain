@@ -66,9 +66,10 @@ def apply_plan(
                 )
 
             destination = item.destination
-            destination.parent.mkdir(parents=True, exist_ok=True)
             _assert_safe_destination(target_root, destination)
             _revalidate_destination(item)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            _assert_safe_destination(target_root, destination)
 
             temporary, digest = _copy_source_to_temp(source_path, destination.parent)
             temporary_paths.add(temporary)
