@@ -181,7 +181,7 @@ def _safe_source_file(root: Path, relative_text: str) -> Path:
         candidate.relative_to(root)
     except ValueError as exc:
         raise ApplyError(f"source path escapes staging root: {relative_text}") from exc
-    _assert_no_symlink_components(root, candidate.parent)
+    _assert_no_symlink_components(root, candidate.parent, kind="source")
     if candidate.is_symlink():
         raise ApplyError(f"refusing source symlink: {candidate}")
     if not candidate.exists() or not candidate.is_file():
@@ -250,15 +250,15 @@ def _assert_safe_destination(root: Path, destination: Path) -> None:
         destination.relative_to(root)
     except ValueError as exc:
         raise ApplyError(f"destination escapes target root: {destination}") from exc
-    _assert_no_symlink_components(root, destination.parent)
+    _assert_no_symlink_components(root, destination.parent, kind="target")
     if destination.is_symlink():
         raise ApplyError(f"refusing symlink destination: {destination}")
 
 
-def _assert_no_symlink_components(root: Path, directory: Path) -> None:
+def _assert_no_symlink_components(root: Path, directory: Path, *, kind: str) -> None:
     if has_symlink_component(root, directory):
         raise ApplyError(
-            f"refusing target path whose root or parent chain traverses a symlink: {directory}"
+            f"refusing {kind} path whose root or parent chain traverses a symlink: {directory}"
         )
 
 

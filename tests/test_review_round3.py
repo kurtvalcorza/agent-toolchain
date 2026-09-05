@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 from agent_toolchain.adapters.claude import ClaudeAdapter
+from agent_toolchain.apply import ApplyError, apply_plan
 from agent_toolchain.manifests import load_catalog
 from agent_toolchain.planner import PlanningError, build_plan
 from agent_toolchain.resolver import resolve
@@ -93,3 +95,27 @@ def test_build_plan_names_missing_source_root(tmp_path: Path) -> None:
     message = str(error.value)
     assert str(missing) in message
     assert "source root" in message
+
+
+def test_source_symlink_refusal_names_source_path(tmp_path: Path) -> None:
+    real = tmp_path / "real"
+    real.mkdir()
+    link = tmp_path / "link"
+    os.symlink(real, link)
+    _staging(link / "staging")
+
+    catalog = load_catalog(_catalog(tmp_path))
+    resolution = resolve(catalog, target="claude", profile="base")
+    adapter = ClaudeAdapter(tmp_path / "harness")
+    plan = build_plan(catalog, resolution, source_root=link / "staging", adapter=adapter)
+
+    with pytest.raises(ApplyError) as error:
+        apply_plan(
+            plan,
+            source_root=link / "staging",
+            state_path=adapter.install_state_path(),
+        )
+
+    message = str(error.value)
+    assert "source path" in message
+    assert "target path" not in message
