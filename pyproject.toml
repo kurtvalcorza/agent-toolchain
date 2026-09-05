@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-toolchain"
+version = "0.1.0"
+description = "Host-neutral distribution and integration tooling for portable AI-agent capabilities."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Kurt Valcorza"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.9",
+  "mypy>=1.14",
+]
+
+[project.scripts]
+agent-toolchain = "agent_toolchain.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_toolchain"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["agent_toolchain"]
