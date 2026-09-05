@@ -99,6 +99,8 @@ def apply_plan(
             files=tuple(managed),
         )
         _assert_safe_destination(target_root, state_destination)
+        state_destination.parent.mkdir(parents=True, exist_ok=True)
+        _assert_safe_destination(target_root, state_destination)
         write_state(state_destination, state)
     except Exception as exc:
         _rollback(written, backups)
