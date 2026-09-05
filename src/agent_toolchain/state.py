@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
@@ -109,12 +110,13 @@ def write_state(path: str | Path, state: InstallState) -> None:
         ],
         "metadata": state.metadata,
     }
-    temporary = state_path.with_name(f".{state_path.name}.tmp")
+    descriptor, raw_path = tempfile.mkstemp(
+        prefix=f".{state_path.name}.", suffix=".tmp", dir=state_path.parent
+    )
+    temporary = Path(raw_path)
     try:
-        temporary.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         os.replace(temporary, state_path)
     except OSError as exc:
         with suppress(OSError):
