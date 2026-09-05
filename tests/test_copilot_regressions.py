@@ -70,7 +70,6 @@ def test_write_state_cleans_temporary_file_when_replace_fails(
         metadata={},
     )
     state_path = tmp_path / "state" / "install-state.json"
-    temporary = state_path.with_name(f".{state_path.name}.tmp")
 
     def fail_replace(source: Path, destination: Path) -> None:
         raise OSError(f"cannot replace {source} -> {destination}")
@@ -80,5 +79,8 @@ def test_write_state_cleans_temporary_file_when_replace_fails(
     with pytest.raises(StateError, match="cannot write install state"):
         write_state(state_path, state)
 
-    assert not temporary.exists()
+    # The staged file is created by tempfile.mkstemp under an unpredictable name,
+    # so asserting on a fixed ".install-state.json.tmp" would be vacuously true.
+    # Assert the property this test exists to protect: nothing staged survives.
+    assert list(state_path.parent.iterdir()) == []
     assert not state_path.exists()
