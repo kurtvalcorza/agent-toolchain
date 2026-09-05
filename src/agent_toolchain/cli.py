@@ -5,6 +5,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+from .adapters.base import HarnessAdapter
 from .adapters.registry import get_adapter
 from .apply import apply_plan
 from .doctor import inspect_state
@@ -50,7 +51,15 @@ def _install_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--enable-hooks", action="store_true")
 
 
-def _make_plan(args: argparse.Namespace) -> InstallPlan:
+def _make_plan(args: argparse.Namespace) -> tuple[InstallPlan, HarnessAdapter]:
+    """Build the plan and return it with the single adapter it was planned against.
+
+    The adapter is returned rather than rebuilt by callers so that the plan and
+    any adapter-derived path (notably the install-state location) can never be
+    computed from two independent constructions. ``adapter.root`` is the
+    normalized absolute root that ``plan.target_root`` records.
+    """
+
     catalog = load_catalog(args.catalog)
     resolution = resolve(
         catalog,
@@ -60,13 +69,14 @@ def _make_plan(args: argparse.Namespace) -> InstallPlan:
         exclude_modules=tuple(args.exclude_module),
     )
     adapter = get_adapter(args.target, args.target_root)
-    return build_plan(
+    plan = build_plan(
         catalog,
         resolution,
         source_root=args.source_root,
         adapter=adapter,
         hooks_enabled=args.enable_hooks,
     )
+    return plan, adapter
 
 
 def _plan_payload(plan: InstallPlan) -> dict[str, object]:
@@ -96,7 +106,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
 
     if args.command == "plan":
-        plan = _make_plan(args)
+        plan, _ = _make_plan(args)
         payload = _plan_payload(plan)
         if args.json:
             print(json.dumps(payload, indent=2, sort_keys=True))
@@ -110,8 +120,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.command == "apply":
-        plan = _make_plan(args)
-        adapter = get_adapter(args.target, args.target_root)
+        plan, adapter = _make_plan(args)
         installed_state = apply_plan(
             plan,
             source_root=args.source_root,
