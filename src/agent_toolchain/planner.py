@@ -18,7 +18,9 @@ def build_plan(
     adapter: HarnessAdapter,
     hooks_enabled: bool = False,
 ) -> InstallPlan:
-    root = Path(source_root)
+    root = Path(source_root).expanduser()
+    if not root.is_dir():
+        raise PlanningError(f"source root does not exist or is not a directory: {root}")
     operations: list[Operation] = []
     warnings: list[str] = []
     destinations: dict[str, str] = {}
