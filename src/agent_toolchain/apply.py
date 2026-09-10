@@ -73,6 +73,11 @@ def apply_plan(
 
             temporary, digest = _copy_source_to_temp(source_path, destination.parent)
             temporary_paths.add(temporary)
+            if digest != item.source_sha256:
+                raise ApplyError(
+                    "staged source changed while copying: "
+                    f"{item.operation.source_relative_path}"
+                )
 
             if item.destination_existed:
                 backup = _copy_destination_to_backup(destination)
